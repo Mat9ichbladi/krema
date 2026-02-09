@@ -22,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static build.krema.cli.JdkResolver.resolveOrWarn;
+
 import static java.nio.file.StandardWatchEventKinds.*;
 
 /**
@@ -58,6 +60,7 @@ public class DevCommand implements Callable<Integer> {
     private final AtomicBoolean running = new AtomicBoolean(true);
     private final AtomicReference<Process> appProcess = new AtomicReference<>();
     private Path devBundlePath;
+    private Path javaHome;
     private Map<String, String> dotEnvVars = Map.of();
 
     @Override
@@ -69,6 +72,11 @@ public class DevCommand implements Callable<Integer> {
             dotEnvVars = DotEnvLoader.load(Path.of("."), envProfile);
             System.out.println("[Krema Dev] Environment: " + envProfile);
             System.out.println("[Krema Dev] Config loaded in " + (System.currentTimeMillis() - startTime) + "ms");
+
+            javaHome = resolveOrWarn();
+            if (javaHome == null) {
+                return 1;
+            }
 
             String mainClass = config.getBuild().getMainClass();
             if (mainClass == null || mainClass.isEmpty()) {
@@ -271,7 +279,7 @@ public class DevCommand implements Callable<Integer> {
 
         // Otherwise, launch Java directly (native features may not work on macOS)
         List<String> command = new ArrayList<>();
-        command.add("java");
+        command.add(javaHome.resolve("bin/java").toString());
 
         // Platform-specific flags
         if (Platform.current() == Platform.MACOS) {
@@ -396,6 +404,7 @@ public class DevCommand implements Callable<Integer> {
 
     private boolean runMavenCompile() throws IOException, InterruptedException {
         ProcessBuilder pb = new ProcessBuilder("mvn", "compile", "-q");
+        pb.environment().put("JAVA_HOME", javaHome.toString());
         pb.inheritIO();
         Process process = pb.start();
         return process.waitFor() == 0;
@@ -483,6 +492,7 @@ public class DevCommand implements Callable<Integer> {
                 "mvn", "dependency:build-classpath",
                 "-Dmdep.outputFile=" + tempFile.toAbsolutePath(), "-q"
             );
+            pb.environment().put("JAVA_HOME", javaHome.toString());
             pb.inheritIO();
             Process process = pb.start();
             process.waitFor();
