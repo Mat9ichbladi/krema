@@ -84,15 +84,14 @@ jobs:
 
       - name: Build native image (Windows)
         if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          "$JAVA_HOME/bin/native-image" \
-            --enable-native-access=ALL-UNNAMED \
-            -H:+UnlockExperimentalVMOptions \
-            -H:-CheckToolchain \
-            -Djava.awt.headless=true \
-            -jar krema/krema-cli/target/krema-cli.jar \
-            -o krema-${{ matrix.platform }}
+        run: >
+          & "$env:JAVA_HOME\bin\native-image.cmd"
+          --enable-native-access=ALL-UNNAMED
+          -H:+UnlockExperimentalVMOptions
+          -H:-CheckToolchain
+          -Djava.awt.headless=true
+          -jar krema/krema-cli/target/krema-cli.jar
+          -o krema-${{ matrix.platform }}
 
       - name: Upload native binary (Unix)
         if: runner.os != 'Windows'
