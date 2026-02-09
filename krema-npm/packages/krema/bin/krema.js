@@ -5,6 +5,7 @@
  * and execs the resolved command with inherited stdio.
  */
 
+const fs = require('node:fs');
 const { spawn } = require('node:child_process');
 const readline = require('node:readline');
 const { resolve, findJava } = require('../lib/resolve');
@@ -15,13 +16,13 @@ const { JAVA_VERSION, VERSION } = require('../lib/constants');
 async function main() {
   const args = process.argv.slice(2);
 
-  // Try cached resolution first
+  // Try cached resolution first (validate that cached files still exist)
   const cached = read();
   if (cached && cached.version === VERSION) {
-    if (cached.mode === 'native' && cached.path) {
+    if (cached.mode === 'native' && cached.path && fs.existsSync(cached.path)) {
       return exec(cached.path, args);
     }
-    if (cached.mode === 'jar' && cached.java && cached.jar) {
+    if (cached.mode === 'jar' && cached.java && cached.jar && fs.existsSync(cached.jar)) {
       return exec(cached.java, ['--enable-native-access=ALL-UNNAMED', '-jar', cached.jar, ...args]);
     }
   }
