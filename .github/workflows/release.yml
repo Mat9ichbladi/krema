@@ -40,7 +40,7 @@ jobs:
             arch: arm64
             platform: darwin-arm64
             runner-arch: ARM64
-          - os: macos-13
+          - os: macos-15-large
             arch: x64
             platform: darwin-x64
             runner-arch: X64
@@ -55,10 +55,6 @@ jobs:
           - os: windows-latest
             arch: x64
             platform: win32-x64
-            runner-arch: X64
-          - os: windows-latest
-            arch: arm64
-            platform: win32-arm64
             runner-arch: X64
     runs-on: ${{ matrix.os }}
     steps:
@@ -94,7 +90,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: bash
         run: |
-          native-image \
+          "$JAVA_HOME/bin/native-image" \
             --enable-native-access=ALL-UNNAMED \
             -H:+UnlockExperimentalVMOptions \
             -H:-CheckToolchain \
@@ -138,7 +134,6 @@ jobs:
             artifacts/krema-native-linux-x64/krema-linux-x64
             artifacts/krema-native-linux-arm64/krema-linux-arm64
             artifacts/krema-native-win32-x64/krema-win32-x64.exe
-            artifacts/krema-native-win32-arm64/krema-win32-arm64.exe
 
   publish-npm:
     needs: [build-jar, build-native]
@@ -174,7 +169,7 @@ jobs:
           done
 
           # Windows
-          for win_platform in "win32-x64" "win32-arm64"; do
+          for win_platform in "win32-x64"; do
             PKG_DIR="krema-npm/packages/@krema-build/cli-${win_platform}"
             cp "artifacts/krema-native-${win_platform}/krema-${win_platform}.exe" "${PKG_DIR}/bin/krema.exe"
             cd "$PKG_DIR"
@@ -191,7 +186,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          PLATFORMS=("darwin-arm64" "darwin-x64" "linux-x64" "linux-arm64" "win32-x64" "win32-arm64")
+          PLATFORMS=("darwin-arm64" "darwin-x64" "linux-x64" "linux-arm64" "win32-x64")
           for platform in "${PLATFORMS[@]}"; do
             cd "krema-npm/packages/@krema-build/cli-${platform}"
             npm publish --access public || true
