@@ -60,6 +60,38 @@ class NativeLibraryFinder {
     }
 
     /**
+     * Finds the native webview library directory within a specific base directory.
+     * Checks both flat layout and {platform}/{arch}/ subdirectories.
+     *
+     * @return the directory containing the library, or null if not found
+     */
+    static Path findIn(Path baseDir) {
+        if (!Files.isDirectory(baseDir)) return null;
+
+        Platform platform = Platform.current();
+        String archSubdir = platform.name().toLowerCase() + "/" + PlatformDetector.getArch();
+
+        // Check platform/arch subdirectory first
+        Path archDir = baseDir.resolve(archSubdir);
+        if (Files.isDirectory(archDir)) {
+            try (var stream = Files.list(archDir)) {
+                if (stream.anyMatch(p -> p.toString().contains(LIBRARY_BASE_NAME))) {
+                    return archDir;
+                }
+            } catch (IOException ignored) {}
+        }
+
+        // Fall back to flat directory
+        try (var stream = Files.list(baseDir)) {
+            if (stream.anyMatch(p -> p.toString().contains(LIBRARY_BASE_NAME))) {
+                return baseDir;
+            }
+        } catch (IOException ignored) {}
+
+        return null;
+    }
+
+    /**
      * Finds the native webview library file itself.
      * Searches both flat directories and {platform}/{arch}/ subdirectories.
      *
