@@ -10,7 +10,6 @@
   },
   "optionalDependencies": {
     "@krema-build/cli-darwin-arm64": "0.1.0",
-    "@krema-build/cli-darwin-x64": "0.1.0",
     "@krema-build/cli-linux-x64": "0.1.0",
     "@krema-build/cli-linux-arm64": "0.1.0",
     "@krema-build/cli-win32-x64": "0.1.0"
