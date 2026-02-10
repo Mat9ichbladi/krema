@@ -8,7 +8,6 @@
  * <h2>Available Ports</h2>
  * <ul>
  *   <li>{@link build.krema.core.ports.WindowPort} - Window management operations</li>
- *   <li>{@link build.krema.core.ports.WebViewPort} - WebView rendering and IPC</li>
  *   <li>{@link build.krema.core.ports.DialogPort} - File and message dialogs</li>
  *   <li>{@link build.krema.core.ports.MenuPort} - Application and context menus</li>
  *   <li>{@link build.krema.core.ports.NotificationPort} - Desktop notifications</li>
