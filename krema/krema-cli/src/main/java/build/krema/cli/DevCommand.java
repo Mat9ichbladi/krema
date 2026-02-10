@@ -78,6 +78,10 @@ public class DevCommand implements Callable<Integer> {
                 return 1;
             }
 
+            if (!MavenResolver.checkAvailable()) {
+                return 1;
+            }
+
             String mainClass = config.getBuild().getMainClass();
             if (mainClass == null || mainClass.isEmpty()) {
                 System.err.println("[Krema Dev] Error: main_class not specified in krema.toml [build] section");
@@ -405,7 +409,7 @@ public class DevCommand implements Callable<Integer> {
     }
 
     private boolean runMavenCompile() throws IOException, InterruptedException {
-        ProcessBuilder pb = new ProcessBuilder("mvn", "compile", "-q");
+        ProcessBuilder pb = new ProcessBuilder(MavenResolver.command(), "compile", "-q");
         pb.environment().put("JAVA_HOME", javaHome.toString());
         pb.inheritIO();
         Process process = pb.start();
@@ -445,7 +449,7 @@ public class DevCommand implements Callable<Integer> {
         Path tempFile = Files.createTempFile("krema-classpath", ".txt");
         try {
             ProcessBuilder pb = new ProcessBuilder(
-                "mvn", "dependency:build-classpath",
+                MavenResolver.command(), "dependency:build-classpath",
                 "-Dmdep.outputFile=" + tempFile.toAbsolutePath(), "-q"
             );
             pb.environment().put("JAVA_HOME", javaHome.toString());

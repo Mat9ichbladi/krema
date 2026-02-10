@@ -56,6 +56,10 @@ public class BuildCommand implements Callable<Integer> {
                 return 1;
             }
 
+            if (!MavenResolver.checkAvailable()) {
+                return 1;
+            }
+
             // Build frontend
             if (!skipFrontend) {
                 if (!buildFrontend(config, dotEnvVars)) {
@@ -144,7 +148,7 @@ public class BuildCommand implements Callable<Integer> {
     private boolean buildWithMaven() throws IOException, InterruptedException {
         System.out.println("[Krema Build] Building with Maven...");
 
-        ProcessBuilder pb = new ProcessBuilder("mvn", "package", "-q", "-DskipTests");
+        ProcessBuilder pb = new ProcessBuilder(MavenResolver.command(), "package", "-q", "-DskipTests");
         pb.environment().put("JAVA_HOME", javaHome.toString());
         pb.inheritIO();
         Process process = pb.start();
@@ -456,7 +460,7 @@ public class BuildCommand implements Callable<Integer> {
         Path cpFile = Files.createTempFile("krema-cp", ".txt");
         try {
             ProcessBuilder pb = new ProcessBuilder(
-                "mvn", "dependency:build-classpath",
+                MavenResolver.command(), "dependency:build-classpath",
                 "-Dmdep.outputFile=" + cpFile.toAbsolutePath(),
                 "-q"
             );
