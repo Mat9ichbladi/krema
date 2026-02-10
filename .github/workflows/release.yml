@@ -98,9 +98,10 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $redistDir = Get-ChildItem "$env:VCToolsRedistDir\x64\Microsoft.VC*.CRT" -Directory | Select-Object -Last 1
-          Copy-Item "$($redistDir.FullName)\vcruntime140.dll" .
-          Copy-Item "$($redistDir.FullName)\vcruntime140_1.dll" .
+          $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          $crtDir = Get-ChildItem "$vsPath\VC\Redist\MSVC\*\x64\Microsoft.VC*.CRT" -Directory | Select-Object -Last 1
+          Copy-Item "$($crtDir.FullName)\vcruntime140.dll" .
+          Copy-Item "$($crtDir.FullName)\vcruntime140_1.dll" .
 
       - name: Upload native binary (Unix)
         if: runner.os != 'Windows'
