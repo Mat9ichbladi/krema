@@ -15,6 +15,8 @@ import java.util.concurrent.TimeUnit;
 
 import build.krema.core.platform.PlatformDetector;
 
+import static build.krema.cli.JdkResolver.resolveOrWarn;
+
 /**
  * Builds the application for production.
  */
@@ -39,6 +41,8 @@ public class BuildCommand implements Callable<Integer> {
     @Option(names = {"--env"}, description = "Environment profile", defaultValue = "production")
     private String envProfile;
 
+    private Path javaHome;
+
     @Override
     public Integer call() {
         try {
@@ -46,6 +50,11 @@ public class BuildCommand implements Callable<Integer> {
             java.util.Map<String, String> dotEnvVars = DotEnvLoader.load(Path.of("."), envProfile);
             System.out.println("[Krema Build] Environment: " + envProfile);
             System.out.println("[Krema Build] Starting production build...");
+
+            javaHome = resolveOrWarn();
+            if (javaHome == null) {
+                return 1;
+            }
 
             // Build frontend
             if (!skipFrontend) {
@@ -136,6 +145,7 @@ public class BuildCommand implements Callable<Integer> {
         System.out.println("[Krema Build] Building with Maven...");
 
         ProcessBuilder pb = new ProcessBuilder("mvn", "package", "-q", "-DskipTests");
+        pb.environment().put("JAVA_HOME", javaHome.toString());
         pb.inheritIO();
         Process process = pb.start();
         int exitCode = process.waitFor();
@@ -172,10 +182,9 @@ public class BuildCommand implements Callable<Integer> {
         }
 
         java.util.List<String> command = new java.util.ArrayList<>();
-        command.add("javac");
-        command.add("--enable-preview");
+        command.add(javaHome.resolve("bin/javac").toString());
         command.add("--release");
-        command.add("20");
+        command.add("25");
         command.add("-d");
         command.add(outputDir.toString());
         command.addAll(javaFiles);
@@ -335,106 +344,33 @@ public class BuildCommand implements Callable<Integer> {
     }
 
     private Path findNativeImageTool() {
-        // Check GRAALVM_HOME
+        // Check GRAALVM_HOME (explicit GraalVM override)
         String graalHome = System.getenv("GRAALVM_HOME");
         if (graalHome != null && !graalHome.isBlank()) {
             Path tool = Path.of(graalHome, "bin", "native-image");
-            if (Files.isExecutable(tool)) {
-                return tool;
-            }
+            if (Files.isExecutable(tool)) return tool;
         }
 
-        // Check JAVA_HOME
-        String javaHome = System.getenv("JAVA_HOME");
-        if (javaHome != null && !javaHome.isBlank()) {
-            Path tool = Path.of(javaHome, "bin", "native-image");
-            if (Files.isExecutable(tool)) {
-                return tool;
-            }
-        }
-
-        // Auto-detect GraalVM via system tools
-        Path discovered = discoverGraalVMNativeImage();
-        if (discovered != null) {
-            return discovered;
+        // Check the resolved JDK (already discovered by JdkResolver)
+        if (javaHome != null) {
+            Path tool = javaHome.resolve("bin/native-image");
+            if (Files.isExecutable(tool)) return tool;
         }
 
         // Fall back to PATH
+        String whichCmd = PlatformDetector.isWindows() ? "where" : "which";
         try {
-            ProcessBuilder pb = new ProcessBuilder("which", "native-image");
+            var pb = new ProcessBuilder(whichCmd, "native-image");
             pb.redirectErrorStream(true);
             Process process = pb.start();
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line = reader.readLine();
                 if (process.waitFor() == 0 && line != null && !line.isBlank()) {
                     return Path.of(line.trim());
                 }
             }
-        } catch (IOException | InterruptedException ignored) {
-        }
+        } catch (IOException | InterruptedException ignored) {}
 
-        return null;
-    }
-
-    private Path discoverGraalVMNativeImage() {
-        if (PlatformDetector.isMacOS()) {
-            return discoverViaMacOSJavaHome();
-        }
-        if (PlatformDetector.isLinux()) {
-            return discoverViaLinuxAlternatives();
-        }
-        return null;
-    }
-
-    private Path discoverViaMacOSJavaHome() {
-        // /usr/libexec/java_home -v 25+ finds any JDK 25+ installation.
-        // GraalVM 25+ ships native-image as a built-in tool, so if the
-        // discovered JDK has bin/native-image it's a usable GraalVM.
-        try {
-            ProcessBuilder pb = new ProcessBuilder("/usr/libexec/java_home", "-v", "25+");
-            pb.redirectErrorStream(true);
-            Process process = pb.start();
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line = reader.readLine();
-                if (process.waitFor() == 0 && line != null && !line.isBlank()) {
-                    Path tool = Path.of(line.trim(), "bin", "native-image");
-                    if (Files.isExecutable(tool)) {
-                        return tool;
-                    }
-                }
-            }
-        } catch (IOException | InterruptedException ignored) {
-        }
-        return null;
-    }
-
-    private Path discoverViaLinuxAlternatives() {
-        // On Linux, update-alternatives can reveal the java installation path.
-        // Resolve the symlink to find the JDK home, then check for native-image.
-        try {
-            ProcessBuilder pb = new ProcessBuilder("update-alternatives", "--query", "java");
-            pb.redirectErrorStream(true);
-            Process process = pb.start();
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (line.startsWith("Value:")) {
-                        // Value: /usr/lib/jvm/graalvm-25/bin/java
-                        String javaPath = line.substring("Value:".length()).trim();
-                        Path binDir = Path.of(javaPath).getParent();
-                        if (binDir != null) {
-                            Path tool = binDir.resolve("native-image");
-                            if (Files.isExecutable(tool)) {
-                                return tool;
-                            }
-                        }
-                        break;
-                    }
-                }
-            }
-            process.waitFor();
-        } catch (IOException | InterruptedException ignored) {
-        }
         return null;
     }
 
@@ -446,6 +382,7 @@ public class BuildCommand implements Callable<Integer> {
                 "-Dmdep.outputFile=" + cpFile.toAbsolutePath(),
                 "-q"
             );
+            pb.environment().put("JAVA_HOME", javaHome.toString());
             pb.inheritIO();
             Process process = pb.start();
             int exitCode = process.waitFor();

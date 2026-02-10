@@ -11,7 +11,7 @@ import java.util.concurrent.Callable;
 @Command(
     name = "krema",
     mixinStandardHelpOptions = true,
-    version = "Krema 0.1.0",
+    versionProvider = KremaCli.VersionProvider.class,
     description = "Lightweight desktop apps with system webviews",
     subcommands = {
         InitCommand.class,
@@ -22,6 +22,13 @@ import java.util.concurrent.Callable;
     }
 )
 public class KremaCli implements Callable<Integer> {
+
+    static final class VersionProvider implements CommandLine.IVersionProvider {
+        @Override
+        public String[] getVersion() {
+            return new String[]{"Krema " + CliVersion.get()};
+        }
+    }
 
     public static void main(String[] args) {
         long startTime = System.currentTimeMillis();

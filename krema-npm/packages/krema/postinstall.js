@@ -30,6 +30,11 @@ async function main() {
     }
   }
 
+  // Only cache if the JAR was actually downloaded
+  if (!fs.existsSync(jarPath)) {
+    return;
+  }
+
   // 3. Check for Java 25
   const javaPath = findJava();
   if (javaPath) {

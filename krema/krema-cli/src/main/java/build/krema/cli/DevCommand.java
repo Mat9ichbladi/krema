@@ -22,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static build.krema.cli.JdkResolver.resolveOrWarn;
+
 import static java.nio.file.StandardWatchEventKinds.*;
 
 /**
@@ -58,6 +60,7 @@ public class DevCommand implements Callable<Integer> {
     private final AtomicBoolean running = new AtomicBoolean(true);
     private final AtomicReference<Process> appProcess = new AtomicReference<>();
     private Path devBundlePath;
+    private Path javaHome;
     private Map<String, String> dotEnvVars = Map.of();
 
     @Override
@@ -69,6 +72,11 @@ public class DevCommand implements Callable<Integer> {
             dotEnvVars = DotEnvLoader.load(Path.of("."), envProfile);
             System.out.println("[Krema Dev] Environment: " + envProfile);
             System.out.println("[Krema Dev] Config loaded in " + (System.currentTimeMillis() - startTime) + "ms");
+
+            javaHome = resolveOrWarn();
+            if (javaHome == null) {
+                return 1;
+            }
 
             String mainClass = config.getBuild().getMainClass();
             if (mainClass == null || mainClass.isEmpty()) {
@@ -271,7 +279,7 @@ public class DevCommand implements Callable<Integer> {
 
         // Otherwise, launch Java directly (native features may not work on macOS)
         List<String> command = new ArrayList<>();
-        command.add("java");
+        command.add(javaHome.resolve("bin/java").toString());
 
         // Platform-specific flags
         if (Platform.current() == Platform.MACOS) {
@@ -313,6 +321,7 @@ public class DevCommand implements Callable<Integer> {
         AppBundler bundler = AppBundlerFactory.get();
 
         Map<String, String> env = new HashMap<>();
+        env.put("JAVA_HOME", javaHome.toString());
         env.put("KREMA_DEV", "true");
         env.put("KREMA_DEV_URL", devUrl);
         env.put("KREMA_CLASSPATH", classpath);
@@ -396,6 +405,7 @@ public class DevCommand implements Callable<Integer> {
 
     private boolean runMavenCompile() throws IOException, InterruptedException {
         ProcessBuilder pb = new ProcessBuilder("mvn", "compile", "-q");
+        pb.environment().put("JAVA_HOME", javaHome.toString());
         pb.inheritIO();
         Process process = pb.start();
         return process.waitFor() == 0;
@@ -404,20 +414,14 @@ public class DevCommand implements Callable<Integer> {
     private String findKremaLibPath() {
         // 1. Explicit override via KREMA_LIB_PATH
         String explicitPath = System.getenv("KREMA_LIB_PATH");
-        if (explicitPath != null) {
-            Path libPath = Path.of(explicitPath);
-            if (containsWebviewLib(libPath)) {
-                return libPath.toAbsolutePath().toString();
-            }
+        if (explicitPath != null && Files.isDirectory(Path.of(explicitPath))) {
+            return explicitPath;
         }
 
-        // 2. Resolve from KREMA_HOME (set by bin/krema launcher)
-        String kremaHome = System.getenv("KREMA_HOME");
-        if (kremaHome != null) {
-            Path libPath = Path.of(kremaHome, "krema-core", "lib");
-            if (containsWebviewLib(libPath)) {
-                return libPath.toAbsolutePath().toString();
-            }
+        // 2. Use NativeLibraryFinder (searches CWD-relative paths + java.library.path)
+        Path found = NativeLibraryFinder.find();
+        if (found != null) {
+            return found.toAbsolutePath().toString();
         }
 
         // 3. Resolve relative to the CLI JAR location
@@ -426,53 +430,13 @@ public class DevCommand implements Callable<Integer> {
                     .getCodeSource().getLocation().toURI());
             // JAR is at <krema-root>/krema-cli/target/krema-cli.jar
             Path kremaRoot = jarPath.getParent().getParent().getParent();
-            Path libPath = kremaRoot.resolve("krema-core/lib");
-            if (containsWebviewLib(libPath)) {
-                return libPath.toAbsolutePath().toString();
+            found = NativeLibraryFinder.findIn(kremaRoot.resolve("krema-core/lib"));
+            if (found != null) {
+                return found.toAbsolutePath().toString();
             }
         } catch (Exception ignored) {}
 
-        // 4. Check common relative locations (for development setups)
-        String[] relativePaths = {
-            "../krema/krema-core/lib",
-            "../krema-core/lib",
-            "../../krema/krema-core/lib",
-        };
-
-        for (String basePath : relativePaths) {
-            Path libPath = Path.of(basePath);
-            if (containsWebviewLib(libPath)) {
-                return libPath.toAbsolutePath().toString();
-            }
-        }
-
-        // 5. Check Maven local repository
-        Path m2Base = Path.of(System.getProperty("user.home"),
-                ".m2/repository/build/krema/krema-core");
-        if (Files.isDirectory(m2Base)) {
-            try (var versions = Files.list(m2Base)) {
-                var latestVersion = versions
-                    .filter(Files::isDirectory)
-                    .max((a, b) -> a.getFileName().toString().compareTo(b.getFileName().toString()));
-                if (latestVersion.isPresent()) {
-                    Path libDir = latestVersion.get().resolve("lib");
-                    if (containsWebviewLib(libDir)) {
-                        return libDir.toAbsolutePath().toString();
-                    }
-                }
-            } catch (IOException ignored) {}
-        }
-
         return null;
-    }
-
-    private boolean containsWebviewLib(Path dir) {
-        if (!Files.isDirectory(dir)) return false;
-        try (var files = Files.list(dir)) {
-            return files.anyMatch(p -> p.getFileName().toString().contains("webview"));
-        } catch (IOException e) {
-            return false;
-        }
     }
 
     private String buildClasspath() throws IOException, InterruptedException {
@@ -483,6 +447,7 @@ public class DevCommand implements Callable<Integer> {
                 "mvn", "dependency:build-classpath",
                 "-Dmdep.outputFile=" + tempFile.toAbsolutePath(), "-q"
             );
+            pb.environment().put("JAVA_HOME", javaHome.toString());
             pb.inheritIO();
             Process process = pb.start();
             process.waitFor();
