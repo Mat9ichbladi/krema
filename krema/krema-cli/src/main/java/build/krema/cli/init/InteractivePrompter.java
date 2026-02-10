@@ -52,14 +52,27 @@ public class InteractivePrompter {
     }
 
     /**
-     * Prompt for selecting from a list of options using arrow-key navigation.
+     * Prompt for selecting from a list of options.
+     * Uses arrow-key navigation when the terminal supports it, falls back to numbered input.
      */
     public String promptSelect(String prompt, List<String> options, String defaultValue) {
-        terminal.writer().println();
-        terminal.writer().println(formatQuestion(prompt) + "  (↑/↓ to move, Enter to select)");
-
         int selected = defaultValue != null ? options.indexOf(defaultValue) : 0;
         if (selected < 0) selected = 0;
+
+        if (supportsInteractiveSelect()) {
+            return interactiveSelect(prompt, options, selected);
+        }
+        return numberedSelect(prompt, options, selected);
+    }
+
+    private boolean supportsInteractiveSelect() {
+        String type = terminal.getType();
+        return type != null && !type.equals(Terminal.TYPE_DUMB) && !type.equals(Terminal.TYPE_DUMB_COLOR);
+    }
+
+    private String interactiveSelect(String prompt, List<String> options, int selected) {
+        terminal.writer().println();
+        terminal.writer().println(formatQuestion(prompt) + "  (↑/↓ to move, Enter to select)");
 
         renderSelectOptions(options, selected);
         terminal.writer().flush();
@@ -73,8 +86,17 @@ public class InteractivePrompter {
 
         try {
             KeyMap<SelectOp> keyMap = new KeyMap<>();
-            keyMap.bind(SelectOp.UP, KeyMap.key(terminal, Capability.key_up));
-            keyMap.bind(SelectOp.DOWN, KeyMap.key(terminal, Capability.key_down));
+
+            // Capability-based bindings (works when JLine has full terminal support)
+            String capUp = KeyMap.key(terminal, Capability.key_up);
+            String capDown = KeyMap.key(terminal, Capability.key_down);
+            if (capUp != null) keyMap.bind(SelectOp.UP, capUp);
+            if (capDown != null) keyMap.bind(SelectOp.DOWN, capDown);
+
+            // ANSI escape sequence fallbacks (CSI and SS3 variants)
+            keyMap.bind(SelectOp.UP, "\033[A", "\033OA");
+            keyMap.bind(SelectOp.DOWN, "\033[B", "\033OB");
+
             keyMap.bind(SelectOp.ACCEPT, "\r", "\n");
             keyMap.setNomatch(SelectOp.IGNORE);
 
@@ -111,7 +133,6 @@ public class InteractivePrompter {
             terminal.setAttributes(originalAttributes);
         }
 
-        // Print confirmed selection
         terminal.writer().println();
         terminal.writer().println("  Selected: " + new AttributedStringBuilder()
                 .style(AttributedStyle.DEFAULT.foreground(AttributedStyle.CYAN))
@@ -119,6 +140,30 @@ public class InteractivePrompter {
                 .toAnsi());
 
         return options.get(selected);
+    }
+
+    private String numberedSelect(String prompt, List<String> options, int defaultIndex) {
+        terminal.writer().println();
+        terminal.writer().println(formatQuestion(prompt));
+        for (int i = 0; i < options.size(); i++) {
+            String marker = (i == defaultIndex) ? " *" : "";
+            terminal.writer().println("  " + (i + 1) + ". " + options.get(i) + marker);
+        }
+        terminal.writer().flush();
+
+        while (true) {
+            String input = reader.readLine("  Select [" + (defaultIndex + 1) + "]: ").trim();
+            if (input.isEmpty()) {
+                return options.get(defaultIndex);
+            }
+            try {
+                int choice = Integer.parseInt(input) - 1;
+                if (choice >= 0 && choice < options.size()) {
+                    return options.get(choice);
+                }
+            } catch (NumberFormatException ignored) {}
+            terminal.writer().println("  Please enter a number between 1 and " + options.size());
+        }
     }
 
     /**
