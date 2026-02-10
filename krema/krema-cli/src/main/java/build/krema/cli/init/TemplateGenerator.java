@@ -1,5 +1,7 @@
 package build.krema.cli.init;
 
+import build.krema.cli.CliVersion;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -184,7 +186,7 @@ public class TemplateGenerator {
                 <properties>
                     <maven.compiler.release>25</maven.compiler.release>
                     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-                    <krema.version>0.1.0-SNAPSHOT</krema.version>
+                    <krema.version>%s</krema.version>
                 </properties>
 
                 <dependencies>
@@ -227,6 +229,7 @@ public class TemplateGenerator {
                 config.getArtifactId(),
                 config.getAppName(),
                 config.getDescription(),
+                CliVersion.get(),
                 pluginDependencies.toString(),
                 config.getJavaPackage()
         );
