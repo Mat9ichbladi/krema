@@ -78,7 +78,13 @@ function exec(command, args) {
     console.error(`Failed to start: ${err.message}`);
     process.exit(1);
   });
-  child.on('close', (code) => {
+  child.on('close', (code, signal) => {
+    if (code !== 0 && code !== null && args.length === 0) {
+      console.error(`Krema exited with code ${code}. The native binary may be incompatible with your system.`);
+      console.error('Try clearing the cache and using JAR mode:');
+      console.error(`  ${process.platform === 'win32' ? 'del' : 'rm'} ~/.krema/cache.json`);
+      console.error('  krema');
+    }
     process.exit(code ?? 1);
   });
 }

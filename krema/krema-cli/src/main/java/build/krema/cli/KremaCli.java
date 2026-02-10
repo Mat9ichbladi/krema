@@ -31,6 +31,8 @@ public class KremaCli implements Callable<Integer> {
         System.out.println("[Krema CLI] Initialized in " + (System.currentTimeMillis() - startTime) + "ms");
 
         int exitCode = cmd.execute(args);
+        System.out.flush();
+        System.err.flush();
         System.exit(exitCode);
     }
 
