@@ -38,7 +38,7 @@ const config = {
     {
       tagName: 'script',
       attributes: {
-        async: true,
+        async: 'true',
         src: 'https://analytics.akalea.com/js/pa-SmnpwNcVBNvWqBzGtSTAj.js',
       },
     },
