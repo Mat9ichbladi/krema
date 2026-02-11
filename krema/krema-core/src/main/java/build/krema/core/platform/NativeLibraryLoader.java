@@ -111,25 +111,42 @@ public final class NativeLibraryLoader {
         String arch = PlatformDetector.getArch();
         String resourceDir = "/native/" + platform.name().toLowerCase() + "/" + arch + "/";
         String libraryFileName = platform.formatLibraryName(libraryName);
+        System.out.println("[NativeLibraryLoader] Looking for resource: " + resourceDir + libraryFileName);
+        System.out.flush();
 
         try (InputStream is = NativeLibraryLoader.class.getResourceAsStream(resourceDir + libraryFileName)) {
             if (is == null) {
+                System.out.println("[NativeLibraryLoader] Resource not found in JAR");
+                System.out.flush();
                 return null;
             }
 
             // Resolve to real path to avoid Windows 8.3 short names (e.g., JULIEN~1)
             Path tempDir = Files.createTempDirectory("krema-native-").toRealPath();
             tempDir.toFile().deleteOnExit();
+            System.out.println("[NativeLibraryLoader] Temp dir: " + tempDir);
+            System.out.flush();
 
             Path libPath = tempDir.resolve(libraryFileName);
             Files.copy(is, libPath, StandardCopyOption.REPLACE_EXISTING);
             libPath.toFile().deleteOnExit();
+            System.out.println("[NativeLibraryLoader] Extracted " + libraryFileName + " (" + Files.size(libPath) + " bytes)");
+            System.out.flush();
 
             // Extract companion files (e.g., WebView2Loader.dll needed by webview.dll on Windows)
             extractCompanionFiles(resourceDir, libraryFileName, tempDir);
 
+            // List temp dir contents before loading
+            try (var listing = Files.list(tempDir)) {
+                var files = listing.map(p -> p.getFileName().toString()).toList();
+                System.out.println("[NativeLibraryLoader] Temp dir contents: " + files);
+                System.out.flush();
+            }
+
             return libPath;
         } catch (IOException e) {
+            System.out.println("[NativeLibraryLoader] extractFromJar failed: " + e);
+            System.out.flush();
             return null;
         }
     }
