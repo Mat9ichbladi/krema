@@ -134,13 +134,29 @@ public final class NativeLibraryLoader {
             System.out.flush();
 
             // Extract companion files (e.g., WebView2Loader.dll needed by webview.dll on Windows)
-            extractCompanionFiles(resourceDir, libraryFileName, tempDir);
+            List<Path> companionPaths = extractCompanionFiles(resourceDir, libraryFileName, tempDir);
 
             // List temp dir contents before loading
             try (var listing = Files.list(tempDir)) {
                 var files = listing.map(p -> p.getFileName().toString()).toList();
                 System.out.println("[NativeLibraryLoader] Temp dir contents: " + files);
                 System.out.flush();
+            }
+
+            // Pre-load companion DLLs so the OS loader can find them when loading the main library.
+            // On Windows, LoadLibraryW does not search the DLL's own directory for dependencies;
+            // pre-loading ensures they appear in the loaded-module list.
+            for (Path companion : companionPaths) {
+                try {
+                    System.out.println("[NativeLibraryLoader] Pre-loading companion: " + companion);
+                    System.out.flush();
+                    SymbolLookup.libraryLookup(companion, Arena.global());
+                    System.out.println("[NativeLibraryLoader] Companion loaded successfully");
+                    System.out.flush();
+                } catch (IllegalArgumentException e) {
+                    System.out.println("[NativeLibraryLoader] Warning: failed to pre-load companion: " + companion + " (" + e.getMessage() + ")");
+                    System.out.flush();
+                }
             }
 
             return libPath;
@@ -156,8 +172,9 @@ public final class NativeLibraryLoader {
      * This ensures dependency DLLs (like WebView2Loader.dll) are co-located
      * with the main library so the OS loader can find them.
      */
-    private static void extractCompanionFiles(String resourceDir, String mainFileName, Path targetDir) {
+    private static List<Path> extractCompanionFiles(String resourceDir, String mainFileName, Path targetDir) {
         List<String> companions = listCompanionFiles(resourceDir, mainFileName);
+        List<Path> extractedPaths = new ArrayList<>();
         System.out.println("[NativeLibraryLoader] Companion files found: " + companions);
         System.out.flush();
         for (String fileName : companions) {
@@ -166,10 +183,12 @@ public final class NativeLibraryLoader {
                 Path target = targetDir.resolve(fileName);
                 Files.copy(is, target, StandardCopyOption.REPLACE_EXISTING);
                 target.toFile().deleteOnExit();
+                extractedPaths.add(target);
                 System.out.println("[NativeLibraryLoader] Extracted companion: " + target);
                 System.out.flush();
             } catch (IOException ignored) {}
         }
+        return extractedPaths;
     }
 
     private static List<String> listCompanionFiles(String resourceDir, String mainFileName) {
