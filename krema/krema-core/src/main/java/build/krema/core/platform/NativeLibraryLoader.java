@@ -7,10 +7,12 @@ import java.lang.foreign.SymbolLookup;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.jar.JarFile;
 
 /**
  * Loads native libraries in a cross-platform manner.
@@ -137,30 +139,57 @@ public final class NativeLibraryLoader {
      * with the main library so the OS loader can find them.
      */
     private static void extractCompanionFiles(String resourceDir, String mainFileName, Path targetDir) {
+        List<String> companions = listCompanionFiles(resourceDir, mainFileName);
+        for (String fileName : companions) {
+            try (var is = NativeLibraryLoader.class.getResourceAsStream(resourceDir + fileName)) {
+                if (is == null) continue;
+                Path target = targetDir.resolve(fileName);
+                Files.copy(is, target, StandardCopyOption.REPLACE_EXISTING);
+                target.toFile().deleteOnExit();
+            } catch (IOException ignored) {}
+        }
+    }
+
+    private static List<String> listCompanionFiles(String resourceDir, String mainFileName) {
+        // Try scanning the JAR via CodeSource (works with shade plugin fat JARs)
         try {
-            List<String> fileNames = new ArrayList<>();
-            try (var dirStream = NativeLibraryLoader.class.getResourceAsStream(resourceDir)) {
-                if (dirStream != null) {
-                    for (String line : new String(dirStream.readAllBytes()).split("\\R")) {
-                        String name = line.trim();
-                        if (!name.isEmpty() && !name.equals(mainFileName)) {
-                            fileNames.add(name);
+            var codeSource = NativeLibraryLoader.class.getProtectionDomain().getCodeSource();
+            if (codeSource != null && codeSource.getLocation() != null) {
+                Path jarPath = Path.of(codeSource.getLocation().toURI());
+                if (Files.isRegularFile(jarPath)) {
+                    List<String> files = new ArrayList<>();
+                    String prefix = resourceDir.startsWith("/") ? resourceDir.substring(1) : resourceDir;
+                    try (var jar = new JarFile(jarPath.toFile())) {
+                        var entries = jar.entries();
+                        while (entries.hasMoreElements()) {
+                            var entry = entries.nextElement();
+                            if (entry.isDirectory()) continue;
+                            String name = entry.getName();
+                            if (!name.startsWith(prefix)) continue;
+                            String fileName = name.substring(prefix.length());
+                            if (!fileName.isEmpty() && !fileName.contains("/") && !fileName.equals(mainFileName)) {
+                                files.add(fileName);
+                            }
                         }
+                    }
+                    if (!files.isEmpty()) return files;
+                }
+            }
+        } catch (URISyntaxException | IOException | SecurityException ignored) {}
+
+        // Fallback: try directory listing via classloader (works for some classloaders)
+        List<String> files = new ArrayList<>();
+        try (var dirStream = NativeLibraryLoader.class.getResourceAsStream(resourceDir)) {
+            if (dirStream != null) {
+                for (String line : new String(dirStream.readAllBytes()).split("\\R")) {
+                    String name = line.trim();
+                    if (!name.isEmpty() && !name.equals(mainFileName)) {
+                        files.add(name);
                     }
                 }
             }
-
-            for (String fileName : fileNames) {
-                try (var fis = NativeLibraryLoader.class.getResourceAsStream(resourceDir + fileName)) {
-                    if (fis == null) continue;
-                    Path target = targetDir.resolve(fileName);
-                    Files.copy(fis, target, StandardCopyOption.REPLACE_EXISTING);
-                    target.toFile().deleteOnExit();
-                }
-            }
-        } catch (IOException ignored) {
-            // Best-effort: companion extraction failure is not fatal
-        }
+        } catch (IOException ignored) {}
+        return files;
     }
 
     private static Path findNextToExecutable(String fileName) {
