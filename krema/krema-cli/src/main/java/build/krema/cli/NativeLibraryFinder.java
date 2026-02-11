@@ -1,8 +1,11 @@
 package build.krema.cli;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 import build.krema.core.platform.Platform;
 import build.krema.core.platform.PlatformDetector;
@@ -14,13 +17,23 @@ class NativeLibraryFinder {
 
     private static final String LIBRARY_BASE_NAME = "webview";
 
-    private static final String[] SEARCH_DIRS = {
-        "lib",
-        "../lib",
-        "../krema-core/lib",
-        "../../krema/krema-core/lib",
-        System.getProperty("java.library.path", "")
-    };
+    private static String[] searchDirs() {
+        List<String> dirs = new ArrayList<>(List.of(
+            "lib",
+            "../lib",
+            "../krema-core/lib",
+            "../../krema/krema-core/lib"
+        ));
+        String libraryPath = System.getProperty("java.library.path", "");
+        if (!libraryPath.isEmpty()) {
+            for (String entry : libraryPath.split(File.pathSeparator)) {
+                if (!entry.isBlank()) {
+                    dirs.add(entry);
+                }
+            }
+        }
+        return dirs.toArray(String[]::new);
+    }
 
     /**
      * Finds the directory containing the native webview library.
@@ -32,7 +45,7 @@ class NativeLibraryFinder {
         Platform platform = Platform.current();
         String archSubdir = platform.name().toLowerCase() + "/" + PlatformDetector.getArch();
 
-        for (String searchPath : SEARCH_DIRS) {
+        for (String searchPath : searchDirs()) {
             Path libDir = Path.of(searchPath);
 
             // Check platform/arch subdirectory first (structured layout)
@@ -102,7 +115,7 @@ class NativeLibraryFinder {
         String libraryName = platform.formatLibraryName(LIBRARY_BASE_NAME);
         String archSubdir = platform.name().toLowerCase() + "/" + PlatformDetector.getArch();
 
-        for (String searchPath : SEARCH_DIRS) {
+        for (String searchPath : searchDirs()) {
             // Check platform/arch subdirectory first (structured layout)
             Path archFile = Path.of(searchPath, archSubdir, libraryName);
             if (Files.exists(archFile)) {
