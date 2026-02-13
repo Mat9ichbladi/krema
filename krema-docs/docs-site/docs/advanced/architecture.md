@@ -174,6 +174,7 @@ At compile time, `KremaCommandProcessor` generates:
 1. Static invoker classes (no reflection)
 2. `CommandRegistrar` implementations
 3. ServiceLoader entries
+4. `krema-commands.d.ts` — TypeScript type definitions for all commands, including interfaces for record/POJO return types, a `KremaCommandMap` mapping command names to their argument and result types, and a typed `krema.invoke()` overload
 
 The `CommandRegistry` routes incoming requests to the appropriate handler.
 
