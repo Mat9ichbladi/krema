@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>krema-cli</artifactId>
+    <version>0.3.2</version>
     <packaging>jar</packaging>
 
     <name>Krema CLI</name>
